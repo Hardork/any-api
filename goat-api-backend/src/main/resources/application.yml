@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: user-center
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/my_api
+    username: root
+    password: hwq2003121
+  #session的失效时间 86400s = 1天
+  session:
+    timeout: 86400
+    storeType: redis
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+  redis:
+    port: 6379
+    host: localhost
+    database: 0
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+    session:
+      cookie:
+        domain:
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: false
+  #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: isDelete # 全局逻辑删除的实体字段名(since 3.3.0,配置后可以忽略不配置步骤2)
+      logic-delete-value: 1 # 逻辑已删除值(默认为 1)
+      logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
+cos:
+  client:
+    accessKey: AKIDTtPuIWbRCuXxCE7oMejaJ3d192pZKtFu
+    secretKey: Tq5EAya4MQjwCSbXGRUiokaEgz5AAzmd
+    region: ap-shanghai
+    bucket: hwq-1317946928
+dubbo:
+  application:
+    name: dubbo-springboot-demo-provider
+  protocol:
+    name: dubbo
+    port: -1
+  registry: #配置注册中心
+    id: nacos-registry
+    address: nacos://localhost:8848
