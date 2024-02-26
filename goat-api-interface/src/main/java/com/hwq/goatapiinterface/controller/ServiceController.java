@@ -72,6 +72,7 @@ public class ServiceController {
         return JSONUtil.toBean(response, ResultResponse.class);
     }
 
+
     // 获取ip所属地
     @GetMapping("/ipInfo")
     public ResultResponse getIpInfo(IpInfoParams ipInfoParams) {

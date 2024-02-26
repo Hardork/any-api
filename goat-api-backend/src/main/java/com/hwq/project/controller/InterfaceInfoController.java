@@ -1,13 +1,15 @@
 package com.hwq.project.controller;
 
-import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.google.gson.Gson;
 import com.hwq.goatapiclientsdk.client.GoatApiClient;
+import com.hwq.goatapiclientsdk.model.request.CurrencyRequest;
+import com.hwq.goatapiclientsdk.model.response.ResultResponse;
+import com.hwq.goatapiclientsdk.model.service.ApiService;
 import com.hwq.goatapicommon.model.entity.InterfaceInfo;
 import com.hwq.goatapicommon.model.entity.User;
+import com.hwq.goatapicommon.service.InnerUserInterfaceInfoService;
 import com.hwq.project.annotation.AuthCheck;
 import com.hwq.project.common.*;
 import com.hwq.project.constant.CommonConstant;
@@ -18,6 +20,7 @@ import com.hwq.project.model.dto.interfaceinfo.InterfaceInfoQueryRequest;
 import com.hwq.project.model.dto.interfaceinfo.InterfaceInfoUpdateRequest;
 import com.hwq.project.model.enums.InterfaceInfoStatusEnum;
 import com.hwq.project.service.InterfaceInfoService;
+import com.hwq.project.service.UserInterfaceInfoService;
 import com.hwq.project.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -26,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -43,8 +47,11 @@ public class InterfaceInfoController {
     @Resource
     private UserService userService;
 
-//    @Resource
-//    private YuApiClient yuApiClient;
+    @Resource
+    private UserInterfaceInfoService userInterfaceInfoService;
+
+    @Resource
+    private ApiService apiService;
     @Resource
     private GoatApiClient goatApiClient;
 
@@ -296,12 +303,22 @@ public class InterfaceInfoController {
         User loginUser = userService.getLoginUser(request);
         String accessKey = loginUser.getAccessKey();
         String secretKey = loginUser.getSecretKey();
+        // 判断用户是否还有调用次数
+        boolean hasInvokeNum = userInterfaceInfoService.invoke(id, loginUser.getId());
+        if (!hasInvokeNum) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "请先获取调用次数");
+        }
         GoatApiClient goatApiClient = new GoatApiClient(accessKey, secretKey);
         String path = oldInterfaceInfo.getPath();
         String method = oldInterfaceInfo.getMethod();
         Object usernameByPost = null;
         if (method.equals("GET")) {
-            usernameByPost = goatApiClient.invokeByGet(requestParams, path);
+            CurrencyRequest currencyRequest = new CurrencyRequest();
+            currencyRequest.setMethod(method);
+            currencyRequest.setPath(oldInterfaceInfo.getPath());
+            currencyRequest.setRequestParams(new HashMap<String, Object>());
+            ResultResponse response = apiService.request(goatApiClient, currencyRequest);
+            return ResultUtils.success(response.getData());
         }
         if (method.equals("POST")) {
             usernameByPost = goatApiClient.invokeByPost(requestParams, path);
