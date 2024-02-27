@@ -6,16 +6,17 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * 接口调用请求
- *
- * @author <a href="https://github.com/Hardork">HWQ</a>
+ * @Author: HWQ
+ * @Date: 2023/08/31 07:59:34
+ * @Version: 1.0
+ * @Description: 调用请求
  */
 @Data
-public class InterfaceInfoInvokeRequest implements Serializable {
+public class InvokeRequest implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private Long id;
-    private List<InvokeRequest.Field> requestParams;
+    private List<Field> requestParams;
     private String userRequestParams;
 
     @Data

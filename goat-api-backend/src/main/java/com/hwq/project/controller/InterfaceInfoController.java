@@ -1,8 +1,11 @@
 package com.hwq.project.controller;
 
 import cn.hutool.json.JSONUtil;
+import com.alibaba.nacos.shaded.com.google.gson.JsonObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.hwq.goatapiclientsdk.client.GoatApiClient;
 import com.hwq.goatapiclientsdk.model.request.CurrencyRequest;
 import com.hwq.goatapiclientsdk.model.response.ResultResponse;
@@ -14,10 +17,7 @@ import com.hwq.project.annotation.AuthCheck;
 import com.hwq.project.common.*;
 import com.hwq.project.constant.CommonConstant;
 import com.hwq.project.exception.BusinessException;
-import com.hwq.project.model.dto.interfaceinfo.InterfaceInfoAddRequest;
-import com.hwq.project.model.dto.interfaceinfo.InterfaceInfoInvokeRequest;
-import com.hwq.project.model.dto.interfaceinfo.InterfaceInfoQueryRequest;
-import com.hwq.project.model.dto.interfaceinfo.InterfaceInfoUpdateRequest;
+import com.hwq.project.model.dto.interfaceinfo.*;
 import com.hwq.project.model.enums.InterfaceInfoStatusEnum;
 import com.hwq.project.service.InterfaceInfoService;
 import com.hwq.project.service.UserInterfaceInfoService;
@@ -29,8 +29,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 接口管理
@@ -54,6 +54,8 @@ public class InterfaceInfoController {
     private ApiService apiService;
     @Resource
     private GoatApiClient goatApiClient;
+
+    private final Gson gson = new Gson();
 
     // region 增删改查
 
@@ -288,8 +290,6 @@ public class InterfaceInfoController {
         }
         // 这个是接口的id
         long id = interfaceInfoInvokeRequest.getId();
-        String requestParams = interfaceInfoInvokeRequest.getRequestParams();
-        boolean json = JSONUtil.isJson(requestParams);
         // 判断是否存在
         InterfaceInfo oldInterfaceInfo = interfaceInfoService.getById(id);
         if (oldInterfaceInfo == null) {
@@ -312,14 +312,30 @@ public class InterfaceInfoController {
         String path = oldInterfaceInfo.getPath();
         String method = oldInterfaceInfo.getMethod();
         Object usernameByPost = null;
+        // 构建请求参数
+        List<InvokeRequest.Field> fieldList = interfaceInfoInvokeRequest.getRequestParams();
+        String requestParams = "{}";
+        if (fieldList != null && !fieldList.isEmpty()) {
+            JsonObject jsonObject = new JsonObject();
+            for (InvokeRequest.Field field : fieldList) {
+                jsonObject.addProperty(field.getFieldName(), field.getValue());
+            }
+            requestParams = gson.toJson(jsonObject);
+        }
+
+        // 将JSON字符串转为Map对象
+        Map<String, Object> params = new Gson().fromJson(requestParams, new TypeToken<Map<String, Object>>() {
+        }.getType());
+
         if (method.equals("GET")) {
             CurrencyRequest currencyRequest = new CurrencyRequest();
             currencyRequest.setMethod(method);
             currencyRequest.setPath(oldInterfaceInfo.getPath());
-            currencyRequest.setRequestParams(new HashMap<String, Object>());
+            currencyRequest.setRequestParams(params);
             ResultResponse response = apiService.request(goatApiClient, currencyRequest);
             return ResultUtils.success(response.getData());
         }
+
         if (method.equals("POST")) {
             usernameByPost = goatApiClient.invokeByPost(requestParams, path);
         }

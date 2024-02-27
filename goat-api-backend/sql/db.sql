@@ -41,6 +41,21 @@ create table if not exists my_api.`interface_info`
     `isDelete` tinyint default 0 not null comment '是否删除(0-未删, 1-已删)'
     ) comment '接口信息';
 
+ALTER TABLE interface_info
+    ADD COLUMN requestExample text comment '请求示例';
+
+ALTER TABLE interface_info
+    ADD COLUMN returnForm varchar(512) default 'JSON' comment '返回格式';
+
+ALTER TABLE interface_info
+    ADD COLUMN responseParams text comment '响应参数';
+
+ALTER TABLE interface_info
+    ADD COLUMN avatarUrl varchar(1024) comment '接口头像';
+
+ALTER TABLE interface_info
+    ADD COLUMN reduceScore int default 0 comment '消耗积分';
+
 
 
 -- 用户调用接口关系表
