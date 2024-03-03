@@ -22,7 +22,7 @@ public class RequestUtils {
     public static <T> String buildUrl(String baseUrl, T params)  {
         StringBuilder url = new StringBuilder(baseUrl);
         // 获取参数
-        Field[] fields = params.getClass().getFields();
+        Field[] fields = params.getClass().getDeclaredFields();
         boolean isFirstParams = true;
         for (Field field : fields) {
             field.setAccessible(true);

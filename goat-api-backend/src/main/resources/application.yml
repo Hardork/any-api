@@ -3,7 +3,7 @@ spring:
     name: user-center
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/my_api
+    url: jdbc:mysql://121.36.48.205:3306/my_api
     username: root
     password: hwq2003121
   #session的失效时间 86400s = 1天
@@ -15,8 +15,9 @@ spring:
       matching-strategy: ANT_PATH_MATCHER
   redis:
     port: 6379
-    host: localhost
+    host: 121.36.48.205
     database: 0
+    password: hwq2003121
 server:
   port: 8080
   servlet:

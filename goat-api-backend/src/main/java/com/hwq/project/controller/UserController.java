@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
  * @Description: 控制层接口
  **/
 @RestController
-@CrossOrigin
 @RequestMapping("/user")
 @Slf4j
 public class UserController {

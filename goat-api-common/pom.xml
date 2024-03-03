@@ -7,10 +7,10 @@
         <groupId>com.hwq</groupId>
         <artifactId>goat-api</artifactId>
         <version>0.0.1</version>
-        <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <artifactId>goat-api-common</artifactId>
     <version>0.0.1</version>
+    <name>goat-api-common</name>
 
     <properties>
         <java.version>1.8</java.version>

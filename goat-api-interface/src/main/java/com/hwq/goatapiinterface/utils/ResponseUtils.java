@@ -8,6 +8,7 @@ import com.hwq.goatapiclientsdk.exception.ApiException;
 import com.hwq.goatapiclientsdk.exception.ErrorCode;
 import com.hwq.goatapiclientsdk.model.response.ResultResponse;
 
+import java.lang.reflect.Field;
 import java.util.Map;
 
 import static org.apache.el.util.MessageFactory.get;
@@ -29,6 +30,26 @@ public class ResponseUtils {
         String response = null;
         try {
             response = get(baseUrl, params);
+            Class<?> aClass = params.getClass();
+            Field[] fields = aClass.getDeclaredFields();
+            boolean isFirst = true;
+            StringBuilder url = new StringBuilder(baseUrl);
+            for (Field field : fields) {
+                field.setAccessible(true);
+                String name = field.getName();
+                if ("serialVersionUID".equals(name)) {
+                    continue;
+                }
+                Object value = field.get(params);
+                if (value != null) {
+                    if (isFirst) {
+                        url.append("?").append(name).append("=").append(value);
+                        isFirst = false;
+                    } else {
+                        url.append("&").append(name).append("=").append(value);
+                    }
+                }
+            }
             Map<String, Object> fromResponse = responseToMap(response);
             boolean success = (boolean) fromResponse.get("success");
             ResultResponse baseResponse = new ResultResponse();
@@ -40,6 +61,8 @@ public class ResponseUtils {
             baseResponse.setData(fromResponse);
             return baseResponse;
         } catch (ApiException e) {
+            throw new ApiException(ErrorCode.OPERATION_ERROR, "构建url异常");
+        } catch (IllegalAccessException e) {
             throw new ApiException(ErrorCode.OPERATION_ERROR, "构建url异常");
         }
     }

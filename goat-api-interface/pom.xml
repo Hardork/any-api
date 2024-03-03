@@ -6,7 +6,6 @@
         <groupId>com.hwq</groupId>
         <artifactId>goat-api</artifactId>
         <version>0.0.1</version>
-        <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <artifactId>goat-api-interface</artifactId>
     <version>0.0.1</version>
