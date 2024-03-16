@@ -4,18 +4,18 @@ spring:
   cloud:
     nacos:
       discovery:
-        ip: 121.36.48.205
+        ip: localhost
     gateway:
       defaultFilters:
         - AddResponseHeader=source, goat
       routes:
         - id: api_route
-          uri: http://121.36.48.205:8123
+          uri: http://localhost:8123
           predicates:
             - Path=/api/**
   redis:
     port: 6379
-    host: 121.36.48.205
+    host: localhost
     database: 0
     password: hwq2003121
 dubbo:
@@ -26,4 +26,4 @@ dubbo:
     port: -1
   registry: #配置注册中心
     id: nacos-registry
-    address: nacos://121.36.48.205:8848
+    address: nacos://localhost:8848

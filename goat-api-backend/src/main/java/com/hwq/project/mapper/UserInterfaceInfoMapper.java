@@ -2,6 +2,7 @@ package com.hwq.project.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.hwq.goatapicommon.model.entity.UserInterfaceInfo;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -13,6 +14,8 @@ import java.util.List;
 */
 public interface UserInterfaceInfoMapper extends BaseMapper<UserInterfaceInfo> {
     List<UserInterfaceInfo> listTopInvokeInterface(int limit);
+
+    List<UserInterfaceInfo> listUserTopInvokeInterface(@Param("userId") long userId, @Param("limit") int limit);
 }
 
 

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.hwq.goatapicommon.model.entity.User;
 import com.hwq.goatapicommon.model.entity.UserInterfaceInfo;
 import com.hwq.project.model.dto.userinterfaceinfo.UserInterfaceInfoFreeRequest;
+import com.hwq.project.model.vo.InterfaceInfoVO;
 import com.hwq.project.model.vo.UserInvokeInterfaceInfoVO;
 
 import java.util.List;
@@ -40,4 +41,10 @@ public interface UserInterfaceInfoService extends IService<UserInterfaceInfo> {
      */
     List<UserInvokeInterfaceInfoVO> listUserInvokeInterfaceInfo(User loginUser);
 
+    /**
+     * 查询用户topInvoke
+     * @param loginUser
+     * @return
+     */
+    List<InterfaceInfoVO> listUserTopInvokeInterfaceInfo(User loginUser);
 }

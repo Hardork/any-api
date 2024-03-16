@@ -7,10 +7,13 @@ import com.hwq.goatapicommon.model.entity.InterfaceInfo;
 import com.hwq.goatapicommon.model.entity.User;
 import com.hwq.goatapicommon.model.entity.UserInterfaceInfo;
 import com.hwq.project.common.ErrorCode;
+import com.hwq.project.common.ResultUtils;
 import com.hwq.project.constant.RedisConstant;
 import com.hwq.project.exception.BusinessException;
+import com.hwq.project.mapper.InterfaceInfoMapper;
 import com.hwq.project.mapper.UserInterfaceInfoMapper;
 import com.hwq.project.model.dto.userinterfaceinfo.UserInterfaceInfoFreeRequest;
+import com.hwq.project.model.vo.InterfaceInfoVO;
 import com.hwq.project.model.vo.UserInvokeInterfaceInfoVO;
 import com.hwq.project.service.InterfaceInfoService;
 import com.hwq.project.service.UserInterfaceInfoService;
@@ -21,6 +24,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -37,6 +41,12 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
     private InterfaceInfoService interfaceInfoService;
     @Resource
     private RedisTemplate<String, String> redisTemplate;
+
+    @Resource
+    private UserInterfaceInfoMapper userInterfaceInfoMapper;
+
+    @Resource
+    private InterfaceInfoMapper interfaceInfoMapper;
 
     public void validUserInterfaceInfo(UserInterfaceInfo userInterfaceInfo, boolean b) {
         if (userInterfaceInfo == null) {
@@ -134,6 +144,26 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
             return userInvokeInterfaceInfoVO;
         }).collect(Collectors.toList());
 
+        return res;
+    }
+
+    @Override
+    public List<InterfaceInfoVO> listUserTopInvokeInterfaceInfo(User loginUser) {
+        List<UserInterfaceInfo> userInterfaceInfos = userInterfaceInfoMapper.listUserTopInvokeInterface(loginUser.getId(), 3);
+        Map<Long, List<UserInterfaceInfo>> interfaceInfoMap = userInterfaceInfos.stream().collect(Collectors.groupingBy(UserInterfaceInfo::getInterfaceInfoId));
+        QueryWrapper<InterfaceInfo> interfaceInfoQueryWrapper = new QueryWrapper<>();
+        interfaceInfoQueryWrapper.in("id", interfaceInfoMap.keySet());
+        List<InterfaceInfo> list = interfaceInfoMapper.selectList(interfaceInfoQueryWrapper);
+        if (list.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        List<InterfaceInfoVO> res = list.stream().map(userInterfaceInfo -> {
+            InterfaceInfoVO interfaceInfoVO = new InterfaceInfoVO();
+            BeanUtils.copyProperties(userInterfaceInfo, interfaceInfoVO);
+            Integer totalNum = interfaceInfoMap.get(userInterfaceInfo.getId()).get(0).getTotalNum();
+            interfaceInfoVO.setTotalNum(totalNum);
+            return interfaceInfoVO;
+        }).collect(Collectors.toList());
         return res;
     }
 }

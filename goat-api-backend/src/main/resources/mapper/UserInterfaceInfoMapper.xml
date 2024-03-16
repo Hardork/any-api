@@ -24,4 +24,7 @@
     <select id="listTopInvokeInterface" resultType="com.hwq.goatapicommon.model.entity.UserInterfaceInfo">
         select interfaceInfoId, sum(totalNum) as 'totalNum' from user_interface_info group by interfaceInfoId order by totalNum desc limit #{limit}
     </select>
+    <select id="listUserTopInvokeInterface" resultType="com.hwq.goatapicommon.model.entity.UserInterfaceInfo">
+        select interfaceInfoId, totalNum from user_interface_info where userId = #{userId} order by totalNum desc limit #{limit}
+    </select>
 </mapper>

@@ -19,6 +19,7 @@ import com.hwq.project.model.dto.userinterfaceinfo.UserInterfaceInfoAddRequest;
 import com.hwq.project.model.dto.userinterfaceinfo.UserInterfaceInfoFreeRequest;
 import com.hwq.project.model.dto.userinterfaceinfo.UserInterfaceInfoQueryRequest;
 import com.hwq.project.model.dto.userinterfaceinfo.UserInterfaceInfoUpdateRequest;
+import com.hwq.project.model.vo.InterfaceInfoVO;
 import com.hwq.project.model.vo.UserInvokeInterfaceInfoVO;
 import com.hwq.project.service.UserService;
 import com.hwq.project.service.UserInterfaceInfoService;
@@ -222,6 +223,17 @@ public class UserInterfaceController {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
         List<UserInvokeInterfaceInfoVO> res = userInterfaceInfoService.listUserInvokeInterfaceInfo(loginUser);
+        return ResultUtils.success(res);
+    }
+
+    // 获取调用接口TOP3
+    @GetMapping("/list/user/topInvoke")
+    public BaseResponse<List<InterfaceInfoVO>> listUserTopInvokeInterfaceInfo(HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        if (loginUser == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        List<InterfaceInfoVO> res = userInterfaceInfoService.listUserTopInvokeInterfaceInfo(loginUser);
         return ResultUtils.success(res);
     }
 
