@@ -25,6 +25,7 @@ import com.hwq.project.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -52,6 +53,9 @@ public class InterfaceInfoController {
 
     @Resource
     private UserInterfaceInfoService userInterfaceInfoService;
+
+    @Resource
+    private RedisTemplate<String, String> redisTemplate;
 
     @Resource
     private ApiService apiService;
@@ -171,6 +175,7 @@ public class InterfaceInfoController {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+
         InterfaceInfo interfaceInfo = interfaceInfoService.getById(id);
         return ResultUtils.success(interfaceInfo);
     }
@@ -251,10 +256,6 @@ public class InterfaceInfoController {
         // 判断该接口是否可以调用
         com.hwq.goatapiclientsdk.model.User user = new com.hwq.goatapiclientsdk.model.User();
         user.setUsername("test");
-        String username = goatApiClient.getUserNameByPost(user);
-        if (StringUtils.isBlank(username)) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "接口验证失败");
-        }
         // 仅本人或管理员可修改
         InterfaceInfo interfaceInfo = new InterfaceInfo();
         interfaceInfo.setId(id);
@@ -352,9 +353,6 @@ public class InterfaceInfoController {
             return ResultUtils.success(response.getData());
         }
 
-        if (method.equals("POST")) {
-            usernameByPost = goatApiClient.invokeByPost(requestParams, path);
-        }
         if (usernameByPost == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }

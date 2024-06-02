@@ -10,6 +10,7 @@ import com.hwq.project.common.ErrorCode;
 import com.hwq.project.common.ResultUtils;
 import com.hwq.project.exception.BusinessException;
 import com.hwq.project.model.dto.user.*;
+import com.hwq.project.model.vo.KeyVO;
 import com.hwq.project.model.vo.UserVO;
 import com.hwq.project.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,7 @@ public class UserController {
 
     @Resource
     private UserService userService;
+
     /**
      * 注册用户接口
      * @param userRegisterRequest
@@ -116,6 +118,26 @@ public class UserController {
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
         return ResultUtils.success(userVO);
+    }
+
+    @GetMapping("/get/key")
+    public BaseResponse<KeyVO> getKey(HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        if (loginUser == null) throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        KeyVO keyVO = new KeyVO();
+        BeanUtils.copyProperties(loginUser, keyVO);
+        return ResultUtils.success(keyVO);
+    }
+
+    @GetMapping("/update/key")
+    public BaseResponse<KeyVO> updateKey(HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        if (loginUser == null) throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        // 重新生成key
+        User user = userService.resetUserSecret(loginUser);
+        KeyVO keyVO = new KeyVO();
+        BeanUtils.copyProperties(user, keyVO);
+        return ResultUtils.success(keyVO);
     }
 
     // endregion

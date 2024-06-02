@@ -22,7 +22,7 @@ class UserCenterApplicationTests {
 
     @Test
     public void testRedis() {
-
+        System.out.println("hello");
     }
 
 }

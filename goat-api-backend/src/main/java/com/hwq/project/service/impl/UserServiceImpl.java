@@ -11,11 +11,16 @@ import com.hwq.project.mapper.UserMapper;
 import com.hwq.project.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.redisson.api.RBloomFilter;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+
+import java.util.Arrays;
 
 import static com.hwq.project.constant.UserConstant.ADMIN_ROLE;
 import static com.hwq.project.constant.UserConstant.USER_LOGIN_STATE;
@@ -32,6 +37,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Resource
     private UserMapper userMapper;
+
+    @Resource
+    private RBloomFilter<String> userNameBloomFilter;
+
+    @Resource
+    private RedissonClient redissonClient;
 
     /**
      * 盐值，混淆密码
@@ -54,31 +65,39 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (!userPassword.equals(checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
         }
-        synchronized (userAccount.intern()) {
-            // 账户不能重复
-            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("userAccount", userAccount);
-            long count = userMapper.selectCount(queryWrapper);
-            if (count > 0) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
-            }
-            // 2. 加密
-            String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
-            // 3. 分配 accessKey, secretKey
-            String accessKey = DigestUtil.md5Hex(SALT + userAccount + RandomUtil.randomNumbers(5));
-            String secretKey = DigestUtil.md5Hex(SALT + userAccount + RandomUtil.randomNumbers(8));
-            // 4. 插入数据
-            User user = new User();
-            user.setUserAccount(userAccount);
-            user.setUserPassword(encryptPassword);
-            user.setAccessKey(accessKey);
-            user.setSecretKey(secretKey);
-            boolean saveResult = this.save(user);
-            if (!saveResult) {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
-            }
-            return user.getId();
+        if (hasUserName(userAccount)) { // 用户名已存在
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
         }
+        RLock lock = redissonClient.getLock(userAccount);
+        User user = new User();
+        try {
+            if (lock.tryLock()) {
+                // 2. 加密
+                String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+                // 3. 分配 accessKey, secretKey
+                String accessKey = Arrays.toString(DigestUtil.sha256(SALT + userAccount + RandomUtil.randomNumbers(5)));
+                String secretKey = Arrays.toString(DigestUtil.sha256(SALT + userAccount + RandomUtil.randomNumbers(8)));
+                // 4. 插入数据
+                user.setUserAccount(userAccount);
+                user.setUserPassword(encryptPassword);
+                user.setAccessKey(accessKey);
+                user.setSecretKey(secretKey);
+                boolean saveResult = this.save(user);
+                if (!saveResult) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
+                }
+                // 添加用户名
+                userNameBloomFilter.add(userAccount);
+                return user.getId();
+            }
+        } finally {
+            lock.unlock();
+        }
+        return user.getId();
+    }
+
+    public boolean hasUserName(String username) {
+        return userNameBloomFilter.contains(username);
     }
 
     @Override
