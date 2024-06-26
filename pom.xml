@@ -27,6 +27,7 @@
     <dubbo.version>3.0.9</dubbo.version>
     <goat-api-common.version>0.0.1</goat-api-common.version>
     <nacos-client.version>2.1.0</nacos-client.version>
+    <caffeine.version>2.7.0</caffeine.version>
   </properties>
 
   <modules>
@@ -75,6 +76,11 @@
         <groupId>com.github.binarywang</groupId>
         <artifactId>weixin-java-pay</artifactId>
         <version>${weixin-java-pay.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.ben-manes.caffeine</groupId>
+        <artifactId>caffeine</artifactId>
+        <version>${caffeine.version}</version>
       </dependency>
       <dependency>
         <groupId>com.baomidou</groupId>

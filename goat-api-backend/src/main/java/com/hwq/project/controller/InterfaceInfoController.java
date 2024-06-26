@@ -16,6 +16,7 @@ import com.hwq.goatapicommon.service.InnerUserInterfaceInfoService;
 import com.hwq.project.annotation.AuthCheck;
 import com.hwq.project.common.*;
 import com.hwq.project.constant.CommonConstant;
+import com.hwq.project.constant.LocalCacheConstant;
 import com.hwq.project.exception.BusinessException;
 import com.hwq.project.model.dto.interfaceinfo.*;
 import com.hwq.project.model.enums.InterfaceInfoStatusEnum;
@@ -25,7 +26,9 @@ import com.hwq.project.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -35,6 +38,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static com.hwq.project.constant.LocalCacheConstant.INTERFACE_INFO_PREFIX;
 
 /**
  * 接口管理
@@ -62,7 +67,12 @@ public class InterfaceInfoController {
     @Resource
     private GoatApiClient goatApiClient;
 
+    @Autowired
+    private ChannelTopic topic;
+
     private final Gson gson = new Gson();
+
+
 
     // region 增删改查
 
@@ -161,7 +171,20 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         boolean result = interfaceInfoService.updateById(interfaceInfo);
+        InterfaceInfo newInterfaceInfo = interfaceInfoService.getById(id);
+        // 删除缓存
+        String path = newInterfaceInfo.getUrl();
+        String method = newInterfaceInfo.getMethod();
+        deleteObject(LocalCacheConstant.INTERFACE_INFO_PREFIX + path + ":" + method);
         return ResultUtils.success(result);
+    }
+
+    // 删除对应的缓存
+    public void deleteObject(String key) {
+        // 删除Redis缓存
+        redisTemplate.delete(key);
+        // 发布缓存失效通知
+        redisTemplate.convertAndSend(topic.getTopic(), key);
     }
 
     /**
@@ -352,7 +375,6 @@ public class InterfaceInfoController {
             ResultResponse response = apiService.request(goatApiClient, currencyRequest);
             return ResultUtils.success(response.getData());
         }
-
         if (usernameByPost == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }

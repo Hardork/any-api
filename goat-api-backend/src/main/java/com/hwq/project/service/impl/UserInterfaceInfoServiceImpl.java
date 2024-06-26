@@ -40,7 +40,7 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
     @Resource
     private InterfaceInfoService interfaceInfoService;
     @Resource
-    private RedisTemplate<String, String> redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Resource
     private UserInterfaceInfoMapper userInterfaceInfoMapper;

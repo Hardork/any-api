@@ -7,6 +7,7 @@ import com.hwq.goatapicommon.service.InnerInterfaceInfoService;
 import com.hwq.goatapicommon.service.InnerUserInterfaceInfoService;
 import com.hwq.goatapicommon.service.InnerUserService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.reactivestreams.Publisher;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -52,7 +53,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
-    private static final List<String> IP_WHITE_LIST = Arrays.asList("127.0.0.1");
+    private static final List<String> IP_BLACK_LIST = Arrays.asList("127.0.0.1");
 
     private static final String INTERFACE_HOST = "http://localhost:8123";
 
@@ -70,11 +71,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         log.info("请求来源地址：" + sourceAddress);
         log.info("请求来源地址：" + request.getRemoteAddress());
         ServerHttpResponse response = exchange.getResponse();
-        // 2. 访问控制 - 黑白名单
-        if (!IP_WHITE_LIST.contains(sourceAddress)) {
-            response.setStatusCode(HttpStatus.FORBIDDEN);
-            return response.setComplete();
-        }
+        log.info("访问控制");
         // 3. 用户鉴权（判断 ak、sk 是否合法）
         HttpHeaders headers = request.getHeaders();
         String accessKey = headers.getFirst("accessKey");
@@ -82,6 +79,10 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         String timestamp = headers.getFirst("timestamp");
         String sign = headers.getFirst("sign");
         String body = headers.getFirst("body");
+        if (!StringUtils.isAnyEmpty(accessKey, nonce, timestamp, sign)) {
+            log.error("参数错误");
+            return handleNoAuth(response);
+        }
         // todo 实际情况应该是去数据库中查是否已分配给用户
         User invokeUser = null;
         try {
@@ -90,6 +91,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
             log.error("getInvokeUser error", e);
         }
         if (invokeUser == null) {
+            log.error("查询不到指定用户");
             return handleNoAuth(response);
         }
 
@@ -97,35 +99,40 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         long currentTime = System.currentTimeMillis() / 1000;
         final long FIVE_MINUTES = 60 * 5L;
         if ((currentTime - Long.parseLong(timestamp)) >= FIVE_MINUTES) {
+            log.error("时间戳超时");
             return handleNoAuth(response);
         }
 
         // 校验nonce, 判断是否是重放攻击
         boolean nonceExisted = Boolean.TRUE.equals(redisTemplate.hasKey(SIGN_KEY + nonce + timestamp));
         if (nonceExisted) {
+            log.error("redis查询不到");
             return handleNoAuth(response);
         }
         // 实际情况中是从数据库中查出 secretKey
         String secretKey = invokeUser.getSecretKey();
         String serverSign = SignUtil.getSign(body, secretKey);
         if (sign == null || !sign.equals(serverSign)) {
+            log.error("加密不符");
             return handleNoAuth(response);
         }
 
         // 4. 请求的模拟接口是否存在，以及请求方法是否匹配
         InterfaceInfo interfaceInfo = null;
         try {
+            // todo：改造成使用布隆过滤器
             interfaceInfo = innerInterfaceInfoService.getInterfaceInfo(path, method);
         } catch (Exception e) {
             log.error("getInterfaceInfo error", e);
         }
         if (interfaceInfo == null) {
+            log.error("无对应接口");
             return handleNoAuth(response);
         }
-        // todo 是否还有调用次数
         // 5.判断用户是否还有调用次数
         boolean hasInvokeNum = innerUserInterfaceInfoService.hasInvokeNum(interfaceInfo.getId(), invokeUser.getId());
         if (!hasInvokeNum) { // 没有调用次数
+            log.error("无调用次数");
             return handleNoAuth(response);
         }
 
@@ -135,8 +142,8 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         //        Mono<Void> filter = chain.filter(exchange);
         //        return filter;
         return handleResponse(exchange, chain, interfaceInfo.getId(), invokeUser.getId());
-
     }
+
 
     /**
      * 处理响应
@@ -207,6 +214,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
     }
 
     public Mono<Void> handleNoAuth(ServerHttpResponse response) {
+        log.error("无调用权限");
         response.setStatusCode(HttpStatus.FORBIDDEN);
         return response.setComplete();
     }

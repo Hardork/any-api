@@ -16,6 +16,7 @@ import com.hwq.project.service.InterfaceInfoService;
 import com.hwq.project.service.UserInterfaceInfoService;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.annotation.Around;
 import org.springframework.beans.BeanUtils;
@@ -46,7 +47,7 @@ public class AnalysisController {
     @Resource
     private InterfaceInfoMapper interfaceInfoMapper;
     @Resource
-    private RedisTemplate<String, String> redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
     @Resource
     private InterfaceInfoService interfaceInfoService;
 
@@ -76,12 +77,13 @@ public class AnalysisController {
     @ApiOperation("查询热门接口")
     public BaseResponse<List<InterfaceInfo>> listHotInvokeInterface() {
         // 先在redis中查询访问次数最多的10人
-        Set<String> hotInterface = redisTemplate.opsForZSet().range(RedisConstant.HOT_INTERFACE_KEY, 0, 10);
+        Set<Object> hotInterface = redisTemplate.opsForZSet().range(RedisConstant.HOT_INTERFACE_KEY, 0, 10);
         if (hotInterface == null || hotInterface.isEmpty()) {
             return ResultUtils.success(new ArrayList<>());
         }
         // 根据redis中查询的id，去数据库中返回接口信息
-        List<Long> ids = hotInterface.stream().map(Long::valueOf).collect(Collectors.toList());
+        List<Object> ids = hotInterface.stream().filter(item -> item instanceof Long)
+                .map(item -> (Long) item).collect(Collectors.toList());
         String idStr = StringUtils.join(ids, ",");
         List<InterfaceInfo> res = interfaceInfoService.query().in("id", ids).last("order by field(id," + idStr + ")").list();
         return ResultUtils.success(res);

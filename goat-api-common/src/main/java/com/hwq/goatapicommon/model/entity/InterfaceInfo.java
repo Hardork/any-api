@@ -107,6 +107,8 @@ public class InterfaceInfo implements Serializable {
 
     private String path;
 
+    private Integer gid;
+
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 }
