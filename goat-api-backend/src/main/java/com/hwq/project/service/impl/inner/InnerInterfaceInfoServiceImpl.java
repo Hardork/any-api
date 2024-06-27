@@ -7,11 +7,15 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.hwq.goatapicommon.model.entity.InterfaceInfo;
 import com.hwq.goatapicommon.service.InnerInterfaceInfoService;
 import com.hwq.project.common.ErrorCode;
+import com.hwq.project.constant.RedissonLockConstant;
 import com.hwq.project.exception.BusinessException;
 import com.hwq.project.mapper.InterfaceInfoMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboService;
+import org.redisson.Redisson;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
@@ -38,6 +42,9 @@ public class InnerInterfaceInfoServiceImpl implements InnerInterfaceInfoService 
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
+    @Resource
+    private RedissonClient redissonClient;
+
     @Override
     public InterfaceInfo getInterfaceInfo(String path, String method) {
         if (StringUtils.isAnyBlank(path, method)) {
@@ -45,24 +52,43 @@ public class InnerInterfaceInfoServiceImpl implements InnerInterfaceInfoService 
         }
         // todo: 将缓存修改为多级缓存
         String k = INTERFACE_INFO_PREFIX + path + ":" + method;
-        InterfaceInfo res = (InterfaceInfo)localCache.get(k, (key) -> {
+        return (InterfaceInfo) localCache.get(k, (key) -> {
+            // 没获取到缓存，去Redis中拿
+            // todo：避免缓存击穿
             InterfaceInfo interfaceInfo = (InterfaceInfo) redisTemplate.opsForValue().get(key);
             if (interfaceInfo != null) {
                 return interfaceInfo;
+            } else {
+                RLock lock = redissonClient.getLock(String.format(RedissonLockConstant.INTERFACE_LOCK, key));
+                lock.lock();
+                try {
+                    // 双重检索, 如果前面的线程已经把缓存加载了，就没必要再去数据库获取数据
+                    interfaceInfo =  (InterfaceInfo) redisTemplate.opsForValue().get(key);
+                    if (interfaceInfo != null) {
+                        return interfaceInfo;
+                    }
+                    // redis中也没有，去DB中获取
+                    InterfaceInfo interfaceInfoFromDB = getInterfaceInfoFromDB(path, method);
+                    // 设置1h的缓存，避免缓存存储太多接口信息
+                    redisTemplate.opsForValue().set(key, interfaceInfoFromDB, 1, TimeUnit.HOURS);
+                    return interfaceInfoFromDB;
+                } finally {
+                    lock.unlock();
+                }
             }
-            // 从DB中获取数据
-            log.info("get data from database");
-            QueryWrapper<InterfaceInfo> interfaceInfoQueryWrapper = new QueryWrapper<>();
-            interfaceInfoQueryWrapper.eq("url", path);
-            interfaceInfoQueryWrapper.eq("method", method);
-            interfaceInfo = interfaceInfoMapper.selectOne(interfaceInfoQueryWrapper);
-            if (interfaceInfo == null) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "不存在对应方法");
-            }
-            redisTemplate.opsForValue().set(key, interfaceInfo, 3, TimeUnit.MINUTES);
-            return interfaceInfo;
         });
-        System.out.println(res);
-        return res;
+    }
+
+    public InterfaceInfo getInterfaceInfoFromDB(String path, String method) {
+        // 从DB中获取数据
+        log.info("get data from database");
+        QueryWrapper<InterfaceInfo> interfaceInfoQueryWrapper = new QueryWrapper<>();
+        interfaceInfoQueryWrapper.eq("url", path);
+        interfaceInfoQueryWrapper.eq("method", method);
+        InterfaceInfo info = interfaceInfoMapper.selectOne(interfaceInfoQueryWrapper);
+        if (info == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "不存在对应方法");
+        }
+        return info;
     }
 }

@@ -49,6 +49,7 @@ create table if not exists my_api.`interface_info`
     `method` varchar(256) not null comment '请求类型',
     `path`   varchar(256) not null comment '请求路径',
     `userId` bigint not null comment '创建人',
+    hotVal  double  not null default 0 comment '接口热度值',
     reduceScore int default 0 comment '消耗积分',
     `createTime` datetime default CURRENT_TIMESTAMP not null comment '创建时间',
     `updateTime` datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
@@ -109,5 +110,29 @@ create table if not exists my_api.`user_interface_info`
     `isDelete` tinyint default 0 not null comment '是否删除(0-未删, 1-已删)'
 ) comment '用户调用接口关系';
 
+-- 用户每日领取免费调用次数记录表
+create table if not exists user_interface_free_daily_record(
+    `id` bigint not null auto_increment comment '主键' primary key,
+    `userId` bigint not null comment '调用用户 id',
+    `interfaceInfoId` bigint not null comment '接口 id',
+    `createTime` datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    `updateTime` datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    `isDelete` tinyint default 0 not null comment '是否删除(0-未删, 1-已删)'
+);
+
 --
-create index url_path_index on interface_info(url, method)
+create index url_path_index on interface_info(url, method);
+
+-- 接口调用表
+create table interface_info_invoke_info (
+    `id` bigint not null auto_increment comment '主键' primary key,
+    `interfaceInfoId` bigint not null comment '接口 id',
+    `initHotValue` int not null default 0 comment '接口热度初始值',
+    `invokeNum` int default 0 not null comment '接口被调用次数',
+    `createTime` datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    `updateTime` datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    `isDelete` tinyint default 0 not null comment '是否删除(0-未删, 1-已删)'
+);
+
+-- 接口监控表
+
