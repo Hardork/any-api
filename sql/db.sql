@@ -134,5 +134,23 @@ create table interface_info_invoke_info (
     `isDelete` tinyint default 0 not null comment '是否删除(0-未删, 1-已删)'
 );
 
--- 接口监控表
+-- 接口访问监控表
+CREATE TABLE `interface_access_stats`
+(
+    `id`             bigint NOT NULL AUTO_INCREMENT COMMENT 'ID',
+    `interfaceInfoId` bigint DEFAULT NULL COMMENT '接口信息表',
+    `date`           date         DEFAULT NULL COMMENT '日期',
+    `pv`             int(11) DEFAULT NULL COMMENT '接口访问量',
+    `uv`             int(11) DEFAULT NULL COMMENT '接口独立访客数',
+    `uip`            int(11) DEFAULT NULL COMMENT '接口独立IP数',
+    `hour`           int(3) DEFAULT NULL COMMENT '小时',
+    `weekday`        int(3) DEFAULT NULL COMMENT '星期',
+    `createTime`    datetime     DEFAULT NULL COMMENT '创建时间',
+    `updateTime`    datetime     DEFAULT NULL COMMENT '修改时间',
+    `isDelete`       tinyint(1) DEFAULT NULL COMMENT '删除标识 0：未删除 1：已删除',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `idx_unique_access_stats` (`interfaceInfoId`,`date`,`hour`) # 使用联合索引加快检索 where interfaceId = 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+insert into interface_access_stats(interfaceInfoId, date, pv, uv, uip, hour, weekday, createTime, updateTime)
+values (1,'2024-6-30',0,0,0,1,7,now(),now()) ON DUPLICATE KEY UPDATE pv = pv + 1, uv = uv + 1, uip = uip + 1;

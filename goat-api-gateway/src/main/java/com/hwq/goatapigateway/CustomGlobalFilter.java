@@ -3,9 +3,11 @@ package com.hwq.goatapigateway;
 import com.hwq.goatapiclientsdk.utils.SignUtil;
 import com.hwq.goatapicommon.model.entity.InterfaceInfo;
 import com.hwq.goatapicommon.model.entity.User;
+import com.hwq.goatapicommon.service.InnerInterfaceAccessStatsService;
 import com.hwq.goatapicommon.service.InnerInterfaceInfoService;
 import com.hwq.goatapicommon.service.InnerUserInterfaceInfoService;
 import com.hwq.goatapicommon.service.InnerUserService;
+import com.hwq.utils.IPUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -31,6 +33,7 @@ import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -50,6 +53,9 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
     @DubboReference
     private InnerUserInterfaceInfoService innerUserInterfaceInfoService;
 
+    @DubboReference
+    private InnerInterfaceAccessStatsService interfaceAccessStatsService;
+
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
@@ -63,15 +69,10 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = INTERFACE_HOST + request.getPath().value();
         String method = request.getMethod().toString();
-        log.info("请求唯一标识：" + request.getId());
-        log.info("请求路径：" + path);
-        log.info("请求方法：" + method);
-        log.info("请求参数：" + request.getQueryParams());
         String sourceAddress = request.getLocalAddress().getHostString();
-        log.info("请求来源地址：" + sourceAddress);
-        log.info("请求来源地址：" + request.getRemoteAddress());
         ServerHttpResponse response = exchange.getResponse();
-        log.info("访问控制");
+        // 2. 打印日志
+        printLog(request, path, method, sourceAddress);
         // 3. 用户鉴权（判断 ak、sk 是否合法）
         HttpHeaders headers = request.getHeaders();
         String accessKey = headers.getFirst("accessKey");
@@ -83,7 +84,6 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
             log.error("参数错误");
             return handleNoAuth(response);
         }
-        // todo 实际情况应该是去数据库中查是否已分配给用户
         User invokeUser = null;
         try {
             invokeUser = innerUserService.getInvokeUser(accessKey);
@@ -94,7 +94,6 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
             log.error("查询不到指定用户");
             return handleNoAuth(response);
         }
-
         // 时间和当前时间不能超过 5 分钟
         long currentTime = System.currentTimeMillis() / 1000;
         final long FIVE_MINUTES = 60 * 5L;
@@ -102,25 +101,22 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
             log.error("时间戳超时");
             return handleNoAuth(response);
         }
-
         // 校验nonce, 判断是否是重放攻击
         boolean nonceExisted = Boolean.TRUE.equals(redisTemplate.hasKey(SIGN_KEY + nonce + timestamp));
         if (nonceExisted) {
             log.error("redis查询不到");
             return handleNoAuth(response);
         }
-        // 实际情况中是从数据库中查出 secretKey
+        // 从数据库中查出 secretKey
         String secretKey = invokeUser.getSecretKey();
         String serverSign = SignUtil.getSign(body, secretKey);
         if (sign == null || !sign.equals(serverSign)) {
             log.error("加密不符");
             return handleNoAuth(response);
         }
-
         // 4. 请求的模拟接口是否存在，以及请求方法是否匹配
         InterfaceInfo interfaceInfo = null;
         try {
-            // todo：改造成使用布隆过滤器
             interfaceInfo = innerInterfaceInfoService.getInterfaceInfo(path, method);
         } catch (Exception e) {
             log.error("getInterfaceInfo error", e);
@@ -135,13 +131,22 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
             log.error("无调用次数");
             return handleNoAuth(response);
         }
-
         // 将nonce存入redis, 设置超时时间为5min
         redisTemplate.opsForValue().set(SIGN_KEY + nonce + timestamp, nonce, FIVE_MINUTES, TimeUnit.SECONDS);
-        // 5. 请求转发，调用模拟接口 + 响应日志
-        //        Mono<Void> filter = chain.filter(exchange);
-        //        return filter;
+        // 5. 接口监控
+        interfaceAccessStatsService.interfaceAccessStats(interfaceInfo.getId(), new Date(), IPUtils.getIp(request), invokeUser.getId());
+        // 6. 请求转发，调用模拟接口 + 响应日志
         return handleResponse(exchange, chain, interfaceInfo.getId(), invokeUser.getId());
+    }
+
+    private void printLog(ServerHttpRequest request, String path, String method, String sourceAddress) {
+        log.info("请求来源IP：" + IPUtils.getIp(request));
+        log.info("请求唯一标识：" + request.getId());
+        log.info("请求路径：" + path);
+        log.info("请求方法：" + method);
+        log.info("请求参数：" + request.getQueryParams());
+        log.info("请求来源地址：" + sourceAddress);
+        log.info("请求来源地址：" + request.getRemoteAddress());
     }
 
 

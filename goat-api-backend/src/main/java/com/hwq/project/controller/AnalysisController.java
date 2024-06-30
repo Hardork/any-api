@@ -11,7 +11,9 @@ import com.hwq.project.constant.RedisConstant;
 import com.hwq.project.exception.BusinessException;
 import com.hwq.project.mapper.InterfaceInfoMapper;
 import com.hwq.project.mapper.UserInterfaceInfoMapper;
+import com.hwq.project.model.dto.analysis.GetSingleInterfaceStatsRequest;
 import com.hwq.project.model.vo.InterfaceInfoVO;
+import com.hwq.project.service.InterfaceAccessStatsService;
 import com.hwq.project.service.InterfaceInfoService;
 import com.hwq.project.service.UserInterfaceInfoService;
 import io.swagger.annotations.ApiOperation;
@@ -50,6 +52,8 @@ public class AnalysisController {
     private RedisTemplate<String, Object> redisTemplate;
     @Resource
     private InterfaceInfoService interfaceInfoService;
+    @Resource
+    private InterfaceAccessStatsService interfaceAccessStatsService;
 
     @AuthCheck(mustRole = "Admin")
     @GetMapping("/top/interface/invoke")
@@ -89,6 +93,11 @@ public class AnalysisController {
         return ResultUtils.success(res);
     }
 
-
+    @GetMapping("/interface/stats")
+    @ApiOperation("单个接口监控统计")
+    public BaseResponse<Long> getSingleInterfaceStats(GetSingleInterfaceStatsRequest getSingleInterfaceStatsRequest) {
+        // todo: 接口监控统计
+        return null;
+    }
 
 }

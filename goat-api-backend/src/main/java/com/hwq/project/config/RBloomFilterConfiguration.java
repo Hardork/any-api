@@ -22,4 +22,16 @@ public class RBloomFilterConfiguration {
         userNameBloomFilter.tryInit(100000000L, 0.001);
         return userNameBloomFilter;
     }
+
+    /**
+     * 用户接口布隆过滤器
+     * @param redissonClient
+     * @return
+     */
+    @Bean
+    public RBloomFilter<String> interfaceInfoBloomFilter(RedissonClient redissonClient) {
+        RBloomFilter<String> interfaceInfoBloomFilter = redissonClient.getBloomFilter("interfaceInfoBloomFilter");
+        interfaceInfoBloomFilter.tryInit(100000000L, 0.001);
+        return interfaceInfoBloomFilter;
+    }
 }

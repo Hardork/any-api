@@ -55,6 +55,11 @@ public class InterfaceInfo implements Serializable {
     private Integer status;
 
     /**
+     * 接口热力值（用于推荐）
+     */
+    private Double hotVal;
+
+    /**
      * 请求类型
      */
     private String method;
@@ -105,8 +110,14 @@ public class InterfaceInfo implements Serializable {
     @TableLogic
     private Integer isDelete;
 
+    /**
+     * 路径
+     */
     private String path;
 
+    /**
+     * 所属分组id
+     */
     private Integer gid;
 
     @TableField(exist = false)

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwq.project.mapper.InterfaceInfoInvokeInfoMapper">
+
+    <resultMap id="BaseResultMap" type="com.hwq.goatapicommon.model.entity.InterfaceInfoInvokeInfo">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="interfaceInfoId" column="interfaceInfoId" jdbcType="BIGINT"/>
+            <result property="initHotValue" column="initHotValue" jdbcType="INTEGER"/>
+            <result property="invokeNum" column="invokeNum" jdbcType="INTEGER"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+            <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,interfaceInfoId,initHotValue,
+        invokeNum,createTime,updateTime,
+        isDelete
+    </sql>
+</mapper>

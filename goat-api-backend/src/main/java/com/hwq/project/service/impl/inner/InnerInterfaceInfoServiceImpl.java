@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.redisson.Redisson;
+import org.redisson.api.RBloomFilter;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -43,6 +44,9 @@ public class InnerInterfaceInfoServiceImpl implements InnerInterfaceInfoService 
     private RedisTemplate<String, Object> redisTemplate;
 
     @Resource
+    private RBloomFilter<String> interfaceInfoBloomFilter;
+
+    @Resource
     private RedissonClient redissonClient;
 
     @Override
@@ -50,15 +54,19 @@ public class InnerInterfaceInfoServiceImpl implements InnerInterfaceInfoService 
         if (StringUtils.isAnyBlank(path, method)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        // todo: 将缓存修改为多级缓存
+        // 多级缓存获取接口信息
         String k = INTERFACE_INFO_PREFIX + path + ":" + method;
         return (InterfaceInfo) localCache.get(k, (key) -> {
             // 没获取到缓存，去Redis中拿
-            // todo：避免缓存击穿
             InterfaceInfo interfaceInfo = (InterfaceInfo) redisTemplate.opsForValue().get(key);
             if (interfaceInfo != null) {
                 return interfaceInfo;
             } else {
+                // 避免缓存穿透
+//                if (!interfaceInfoBloomFilter.contains(k)) { // 避免缓存击穿
+//                    return null;
+//                }
+                // 避免缓存击穿
                 RLock lock = redissonClient.getLock(String.format(RedissonLockConstant.INTERFACE_LOCK, key));
                 lock.lock();
                 try {
@@ -81,7 +89,7 @@ public class InnerInterfaceInfoServiceImpl implements InnerInterfaceInfoService 
 
     public InterfaceInfo getInterfaceInfoFromDB(String path, String method) {
         // 从DB中获取数据
-        log.info("get data from database");
+        log.info("get interfaceInfo from db");
         QueryWrapper<InterfaceInfo> interfaceInfoQueryWrapper = new QueryWrapper<>();
         interfaceInfoQueryWrapper.eq("url", path);
         interfaceInfoQueryWrapper.eq("method", method);

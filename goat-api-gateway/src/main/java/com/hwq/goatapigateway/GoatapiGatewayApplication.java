@@ -23,13 +23,11 @@ public class GoatapiGatewayApplication {
     private DemoService demoService;
 
     public static void main(String[] args) {
-
         ConfigurableApplicationContext context = SpringApplication.run(GoatapiGatewayApplication.class, args);
         GoatapiGatewayApplication application = context.getBean(GoatapiGatewayApplication.class);
         String result = application.doSayHello("world");
         String result2 = application.doSayHello2("world");
         System.out.println("result: " + result);
-        System.out.println("result: " + result2);
     }
 
     public String doSayHello(String name) {
