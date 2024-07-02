@@ -16,4 +16,7 @@ public interface CommonConstant {
      * 降序
      */
     String SORT_ORDER_DESC = " descend";
+
+    public static final String AMAP_REMOTE_URL = "https://restapi.amap.com/v3/ip";
+
 }

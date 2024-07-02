@@ -134,7 +134,7 @@ create table interface_info_invoke_info (
     `isDelete` tinyint default 0 not null comment '是否删除(0-未删, 1-已删)'
 );
 
--- 接口访问监控表
+-- 接口访问监控表（用于实时监控）
 CREATE TABLE `interface_access_stats`
 (
     `id`             bigint NOT NULL AUTO_INCREMENT COMMENT 'ID',
@@ -154,3 +154,36 @@ CREATE TABLE `interface_access_stats`
 
 insert into interface_access_stats(interfaceInfoId, date, pv, uv, uip, hour, weekday, createTime, updateTime)
 values (1,'2024-6-30',0,0,0,1,7,now(),now()) ON DUPLICATE KEY UPDATE pv = pv + 1, uv = uv + 1, uip = uip + 1;
+
+-- 接口访问日志（用于查询地区信息）
+CREATE TABLE `interface_access_logs`
+(
+    `id`             bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'ID',
+    `interfaceInfoId`    bigint DEFAULT NULL COMMENT '接口ID',
+    `userId`         bigint DEFAULT NULL COMMENT '用户信息',
+    `ip`             varchar(64)  DEFAULT NULL COMMENT 'IP',
+    `locale`         varchar(256) DEFAULT NULL COMMENT '地区',
+    `createTime`    datetime  DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updateTime`    datetime  DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+    `isDelete`       tinyint DEFAULT NULL COMMENT '删除标识 0：未删除 1：已删除',
+    PRIMARY KEY (`id`),
+    KEY              `idx_full_short_url` (`interfaceInfoId`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 接口监控地址
+CREATE TABLE `interface_locale_stats`
+(
+    `id`             bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'ID',
+    `interfaceInfoId` bigint DEFAULT NULL COMMENT '接口ID',
+    `date`           date         DEFAULT NULL COMMENT '日期',
+    `cnt`            int(11) DEFAULT NULL COMMENT '访问量',
+    `province`       varchar(64)  DEFAULT NULL COMMENT '省份名称',
+    `city`           varchar(64)  DEFAULT NULL COMMENT '市名称',
+    `adcode`         varchar(64)  DEFAULT NULL COMMENT '城市编码',
+    `country`        varchar(64)  DEFAULT NULL COMMENT '国家标识',
+    `create_time`    datetime     DEFAULT NULL COMMENT '创建时间',
+    `update_time`    datetime     DEFAULT NULL COMMENT '修改时间',
+    `del_flag`       tinyint(1) DEFAULT NULL COMMENT '删除标识 0：未删除 1：已删除',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `idx_unique_locale_stats` (`interfaceInfoId`,`date`,`adcode`,`province`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

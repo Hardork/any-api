@@ -13,6 +13,7 @@ import com.hwq.project.mapper.InterfaceInfoMapper;
 import com.hwq.project.mapper.UserInterfaceInfoMapper;
 import com.hwq.project.model.dto.analysis.GetSingleInterfaceStatsRequest;
 import com.hwq.project.model.vo.InterfaceInfoVO;
+import com.hwq.project.model.vo.analysis.InterfaceStatsRespVO;
 import com.hwq.project.service.InterfaceAccessStatsService;
 import com.hwq.project.service.InterfaceInfoService;
 import com.hwq.project.service.UserInterfaceInfoService;
@@ -95,9 +96,10 @@ public class AnalysisController {
 
     @GetMapping("/interface/stats")
     @ApiOperation("单个接口监控统计")
-    public BaseResponse<Long> getSingleInterfaceStats(GetSingleInterfaceStatsRequest getSingleInterfaceStatsRequest) {
+    public BaseResponse<InterfaceStatsRespVO> getSingleInterfaceStats(GetSingleInterfaceStatsRequest getSingleInterfaceStatsRequest) {
         // todo: 接口监控统计
-        return null;
+        InterfaceStatsRespVO res = interfaceAccessStatsService.getSingleInterfaceStats(getSingleInterfaceStatsRequest);
+        return ResultUtils.success(res);
     }
 
 }
