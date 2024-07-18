@@ -23,6 +23,7 @@ import com.hwq.project.model.enums.InterfaceInfoStatusEnum;
 import com.hwq.project.service.InterfaceInfoService;
 import com.hwq.project.service.UserInterfaceInfoService;
 import com.hwq.project.service.UserService;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -64,8 +65,7 @@ public class InterfaceInfoController {
 
     @Resource
     private ApiService apiService;
-    @Resource
-    private GoatApiClient goatApiClient;
+
 
     @Autowired
     private ChannelTopic topic;
@@ -203,6 +203,15 @@ public class InterfaceInfoController {
         return ResultUtils.success(interfaceInfo);
     }
 
+    @PostMapping("/es/list")
+    @ApiOperation("es搜索接口信息")
+    public BaseResponse<List<InterfaceInfoEsDTO>> listInterfaceInfoFromEs(@RequestBody InterfaceInfoEsQueryRequest interfaceInfoEsQueryRequest) {
+        String searchText = interfaceInfoEsQueryRequest.getSearchText();
+        if (StringUtils.isEmpty(searchText)) throw new BusinessException(ErrorCode.PARAMS_ERROR, "搜索内容不得为空");
+        List<InterfaceInfoEsDTO> interfaceInfoEsDTOS = interfaceInfoService.searchFromEs(interfaceInfoEsQueryRequest);
+        return ResultUtils.success(interfaceInfoEsDTOS);
+    }
+
     /**
      * 获取列表（仅管理员可使用）
      *
@@ -286,7 +295,6 @@ public class InterfaceInfoController {
         boolean result = interfaceInfoService.updateById(interfaceInfo);
         return ResultUtils.success(result);
     }
-//
     /**
      * 下线
      *
@@ -314,7 +322,6 @@ public class InterfaceInfoController {
         boolean result = interfaceInfoService.updateById(interfaceInfo);
         return ResultUtils.success(result);
     }
-//
     /**
      * 测试调用
      *

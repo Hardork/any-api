@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class InterfaceGroupServiceImpl extends ServiceImpl<InterfaceGroupMapper, InterfaceGroup>
     implements InterfaceGroupService{
+
 }
 
 

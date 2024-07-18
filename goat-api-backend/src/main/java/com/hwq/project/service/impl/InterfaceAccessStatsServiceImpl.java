@@ -56,9 +56,9 @@ public class InterfaceAccessStatsServiceImpl extends ServiceImpl<InterfaceAccess
         InterfaceStatsRespVO res = new InterfaceStatsRespVO();
         // 统计总的pv、uv、uip
         InterfaceAccessStatsDTO findPvUvUidStatsByGroup = interfaceAccessLogsMapper.findPvUvUidStatsByGroup(getSingleInterfaceStatsRequest);
-        res.setUv(findPvUvUidStatsByGroup.getUv());
-        res.setPv(findPvUvUidStatsByGroup.getPv());
-        res.setUip(findPvUvUidStatsByGroup.getUip());
+        res.setUv(findPvUvUidStatsByGroup == null ? 0 : findPvUvUidStatsByGroup.getUv());
+        res.setPv(findPvUvUidStatsByGroup == null ? 0 : findPvUvUidStatsByGroup.getPv());
+        res.setUip(findPvUvUidStatsByGroup == null ? 0 : findPvUvUidStatsByGroup.getPv());
         // 1.获取指定日期的访问数据
         List<InterfaceStatsAccessDailyVO> interfaceStatsAccessDailyVOS = interfaceAccessStatsMapper.listStatsByInterfaceId(getSingleInterfaceStatsRequest);
         List<InterfaceStatsAccessDailyVO> daily = new ArrayList<>();
