@@ -25,7 +25,6 @@ public class SwaggerConfig {
                 .build();
 
     }
-
     private ApiInfo apiInfo() {
         return new ApiInfoBuilder()
                 .description("Goat用户中心")
@@ -33,7 +32,6 @@ public class SwaggerConfig {
                 .title("API测试文档")
                 .build();
     }
-
 }
 
 
