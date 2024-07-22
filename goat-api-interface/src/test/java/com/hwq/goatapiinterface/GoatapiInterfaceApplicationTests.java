@@ -16,8 +16,6 @@ class GoatapiInterfaceApplicationTests {
     void contextLoads() {
         User user = new User();
         user.setUsername("hwq");
-        String userNameByPost = goatApiClient.getUserNameByPost(user);
-        System.out.println(userNameByPost);
     }
 
 }

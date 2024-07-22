@@ -1,8 +1,8 @@
 package com.hwq.project.listenner;
 
 import com.hwq.goatapicommon.model.entity.InterfaceInfo;
+import com.hwq.project.esdao.InterfaceRepository;
 import com.hwq.project.model.dto.interfaceinfo.InterfaceInfoEsDTO;
-import com.hwq.project.service.InterfaceInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
@@ -12,13 +12,17 @@ import top.javatool.canal.client.handler.EntryHandler;
 import javax.annotation.Resource;
 
 
+/**
+ * 数据同步监听器
+ * canal监听MySQL数据变化，同步数据到ES
+ */
 @CanalTable("interface_info")
 @Component
 @Slf4j
 public class MySQLDataChangeHandler implements EntryHandler<InterfaceInfo> {
 
     @Resource
-    private InterfaceInfoService interfaceInfoService;
+    private InterfaceRepository interfaceRepository;
     
     /**
      * mysql中数据有新增时自动执行
@@ -28,7 +32,7 @@ public class MySQLDataChangeHandler implements EntryHandler<InterfaceInfo> {
         try {
             InterfaceInfoEsDTO interfaceInfoEsDTO = new InterfaceInfoEsDTO();
             BeanUtils.copyProperties(interfaceInfo, interfaceInfoEsDTO);
-            interfaceInfoService.saveToEs(interfaceInfoEsDTO);
+            interfaceRepository.save(interfaceInfoEsDTO);
             System.out.println(interfaceInfo);
         } catch (Exception e) {
             log.error("新增ES数据失败" + interfaceInfo);
@@ -45,7 +49,7 @@ public class MySQLDataChangeHandler implements EntryHandler<InterfaceInfo> {
         try {
             InterfaceInfoEsDTO interfaceInfoEsDTO = new InterfaceInfoEsDTO();
             BeanUtils.copyProperties(after, interfaceInfoEsDTO);
-            interfaceInfoService.saveToEs(interfaceInfoEsDTO);
+            interfaceRepository.save(interfaceInfoEsDTO);
         } catch (Exception e) {
             log.error("更新ES数据失败" + after);
         }
@@ -63,7 +67,7 @@ public class MySQLDataChangeHandler implements EntryHandler<InterfaceInfo> {
                 log.error("删除接口id为null");
                 return;
             }
-            interfaceInfoService.deleteFromEsById(id);
+            interfaceRepository.deleteById(id);
         } catch (Exception e) {
             log.error("更新ES数据失败" + interfaceInfo);
         }

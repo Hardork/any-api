@@ -37,9 +37,11 @@ public class HotCalculator {
 
     @Scheduled(fixedRate = 60 * 60 * 1000)
     public void calculateHot() {
-        // todo: 计算热度
         log.info("start calculate hotVal" + LocalDateTime.now());
         List<InterfaceInfoInvokeInfo> list = interfaceInfoInvokeInfoService.list();
+        if (list.isEmpty()) {
+            return;
+        }
         List<InterfaceInfo> hotList = list.stream().map(item -> {
             InterfaceInfo interfaceInfo = new InterfaceInfo();
             // 计算热度
@@ -54,9 +56,13 @@ public class HotCalculator {
         }
     }
 
+    /**
+     * 计算热度
+     * @param item
+     * @return
+     */
     public double calHot(InterfaceInfoInvokeInfo item) {
         Integer initHotValue = item.getInitHotValue();
-        Long id = item.getId();
         Integer invokeNum = item.getInvokeNum();
         Date createTime = item.getCreateTime();
         Date today = new Date();

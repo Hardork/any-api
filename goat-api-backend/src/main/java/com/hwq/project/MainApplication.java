@@ -7,7 +7,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 @MapperScan("com.hwq.project.mapper")
-//@EsMapperScan("")
 @EnableDubbo
 /**
  * @MapperScan

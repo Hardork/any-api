@@ -13,6 +13,7 @@ import com.hwq.project.service.InterfaceInfoService;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -73,9 +75,6 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         interfaceRepository.deleteById(id);
     }
 
-    public InterfaceInfoEsDTO findFromEsById(Long id) {
-        return interfaceRepository.findById(id).orElse(null);
-    }
 
 
     @Override
@@ -102,7 +101,8 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         }
         // 构造查询
         NativeSearchQuery searchQuery = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder)
-                .withSorts(sortBuilder).build();
+                .withSorts(sortBuilder)
+                .build();
         SearchHits<InterfaceInfoEsDTO> searchHits = elasticsearchRestTemplate.search(searchQuery, InterfaceInfoEsDTO.class);
         // 命中的记录数
         List<InterfaceInfoEsDTO> resourceList = new ArrayList<>();
@@ -111,7 +111,18 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
             // 获取所有的命中记录
             List<SearchHit<InterfaceInfoEsDTO>> searchHitsList = searchHits.getSearchHits();
             searchHitsList.forEach(item -> {
-                resourceList.add(item.getContent());
+                InterfaceInfoEsDTO content = item.getContent();
+                Map<String, List<String>> highlightFields = item.getHighlightFields();
+                List<String> names = highlightFields.get("name");
+                List<String> descriptions = highlightFields.get("description");
+                if (names != null &&  !names.isEmpty()) {
+                    content.setName(names.get(0));
+
+                }
+                if (descriptions != null &&  !descriptions.isEmpty()) {
+                    content.setDescription(descriptions.get(0));
+                }
+                resourceList.add(content);
             });
         }
         return resourceList;
